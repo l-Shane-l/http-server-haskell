@@ -19,7 +19,13 @@ checkMsg msg
     firstLine parsedMsg = parsedMsg !! 1
     path msg' = firstLine $ msgParse msg'
     url = splitOn "/"
-    content rand = "HTTP/1.1 200\r\n" <> "Content-Type: text/plain\r\n" <> "Content-Length: " <> show (length rand) <> "\r\n\r\n" <> (show rand) <> "\r\n\r\n"
+    content rand =
+      "HTTP/1.1 200 OK\r\n"
+        ++ "Content-Type: text/plain\r\n"
+        ++ "Content-Length: "
+        ++ show (length rand)
+        ++ "\r\n\r\n"
+        ++ rand
 
 main :: IO ()
 main = do
@@ -49,5 +55,7 @@ main = do
     msg <- recv clientSocket 4000
     BC.putStrLn msg
     let resp = checkMsg msg
+    let finalResp = BC.pack resp
+    BC.putStrLn finalResp
     sendAll clientSocket (BC.pack resp)
     close clientSocket
