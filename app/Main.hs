@@ -11,15 +11,17 @@ import System.IO (BufferMode (..), hSetBuffering, stdin, stdout)
 checkMsg :: BC.ByteString -> BC.ByteString
 checkMsg msg
   | path == "/" = buildResponse "200 OK" "" "Welcome!"
-  | pathStartsWithEcho = content $ BC.intercalate "/" $ drop 2 pathComponents
+  | operation == "echo" = content $ BC.intercalate "/" $ drop 2 pathComponents
+  | operation == "user-agent" = content $ BC.split ' ' userAgent !! 1
   | otherwise = buildResponse "404 Not Found" "" "Not Found"
   where
     requestLines = BC.lines msg
     requestLine = head requestLines
     path = BC.words requestLine !! 1
     pathComponents = BC.split '/' path
-    pathStartsWithEcho = "echo" == pathComponents !! 1
+    operation = pathComponents !! 1
     content = buildResponse "200" "text/plain"
+    userAgent = requestLines !! 3
 
 buildResponse :: BC.ByteString -> BC.ByteString -> BC.ByteString -> BC.ByteString
 buildResponse status contentType body =
@@ -63,6 +65,7 @@ main = do
     BC.putStrLn msg
     let resp = checkMsg msg
     let finalResp = resp
+    putStrLn "final resp \n"
     BC.putStrLn finalResp
     sendAll clientSocket resp
     close clientSocket
