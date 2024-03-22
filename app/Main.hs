@@ -4,7 +4,6 @@ module Main (main) where
 
 import Control.Monad (forever)
 import qualified Data.ByteString.Char8 as BC
-import Data.List.Split
 import Network.Socket
 import Network.Socket.ByteString
 import System.IO (BufferMode (..), hSetBuffering, stdin, stdout)
@@ -17,7 +16,7 @@ checkMsg msg
   where
     requestLines = BC.lines msg
     requestLine = head requestLines
-    path = BC.words requestLine !! 1
+    path = head $ drop 1 $ BC.words requestLine -- Extract the path part of the request line
     pathComponents = BC.split '/' path
     content echoText =
       BC.concat
