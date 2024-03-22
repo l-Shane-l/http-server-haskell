@@ -4,50 +4,43 @@ module Main (main) where
 
 import Control.Monad (forever)
 import qualified Data.ByteString.Char8 as BC
-import Data.Char (toLower)
-import Data.Maybe (fromMaybe)
 import Network.Socket
 import Network.Socket.ByteString
 import System.IO (BufferMode (..), hSetBuffering, stdin, stdout)
 
 checkMsg :: BC.ByteString -> BC.ByteString
 checkMsg msg
-  | path == "/" = buildResponse "200 OK" "text/plain" ""
-  | path == "/user-agent" =
-      let userAgent = fromMaybe "User-Agent not found" $ lookup "user-agent" (parseHeaders msg)
-       in buildResponse "200 OK" "text/plain" userAgent
-  | url (path) !! 1 == "echo" = content $ BC.intercalate "/" $ drop 2 $ url path
-  | otherwise = "HTTP/1.1 404 Not Found\r\n\r\n"
+  | path == "/" = buildResponse "200 OK" "" "Welcome!"
+  | pathStartsWithEcho = content $ BC.intercalate "/" $ drop 2 pathComponents
+  | otherwise = buildResponse "404 Not Found" "" "Not Found"
   where
     requestLines = BC.lines msg
     requestLine = head requestLines
-    path = head $ drop 1 $ BC.words requestLine -- Extract the path
-    url = BC.split '/' -- A function to split paths into components
-    -- Parses headers into a list of (key, value) tuples
-    parseHeaders request =
-      let headers = takeWhile (/= "") . drop 1 . dropWhile (/= "") $ requestLines
-       in map
-            ( \header ->
-                let (key, value) = BC.break (== ':') header
-                 in (BC.map toLower $ BC.strip key, BC.strip $ BC.drop 1 value)
-            )
-            headers
-    -- Builds a generic HTTP response given status, content type, and body
-    buildResponse status contentType body =
-      BC.concat
-        [ "HTTP/1.1 ",
-          status,
-          "\r\n",
-          "Content-Type: ",
-          contentType,
-          "\r\n",
-          "Content-Length: ",
-          BC.pack . show $ BC.length body,
-          "\r\n\r\n",
-          body
-        ]
+    path = BC.words requestLine !! 1
+    pathComponents = BC.split '/' path
+    pathStartsWithEcho = "echo" == (head $ drop 1 pathComponents) -- More explicit path checking
     content echoText =
-      buildResponse "200 OK" "text/plain" echoText
+      BC.concat
+        [ "HTTP/1.1 200 OK\r\n",
+          "Content-Type: text/plain\r\n",
+          "Content-Length: ",
+          BC.pack . show $ BC.length echoText,
+          "\r\n\r\n",
+          echoText
+        ]
+
+buildResponse :: BC.ByteString -> BC.ByteString -> BC.ByteString -> BC.ByteString
+buildResponse status contentType body =
+  BC.concat
+    [ "HTTP/1.1 ",
+      status,
+      "\r\n",
+      if BC.null contentType then "" else BC.concat ["Content-Type: ", contentType, "\r\n"],
+      "Content-Length: ",
+      BC.pack . show $ BC.length body,
+      "\r\n\r\n",
+      body
+    ]
 
 main :: IO ()
 main = do
