@@ -3,11 +3,17 @@
 module Main (main) where
 
 import Control.Monad (forever)
-import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import Network.Socket
 import Network.Socket.ByteString
 import System.IO (BufferMode (..), hSetBuffering, stdin, stdout)
+
+checkMsg :: BC.ByteString -> String
+checkMsg msg
+  | msgParse msg !! 1 == "/" = "HTTP/1.1 200 OK\r\n\r\n"
+  | otherwise = "HTTP/1.1 404 Not Found\r\n\r\n"
+  where
+    msgParse msg' = words $ BC.unpack msg'
 
 main :: IO ()
 main = do
@@ -25,6 +31,8 @@ main = do
   addrInfo <- getAddrInfo Nothing (Just host) (Just port)
 
   serverSocket <- socket (addrFamily $ head addrInfo) Stream defaultProtocol
+  setSocketOption serverSocket ReuseAddr 1 -- This stops a busy socket error
+  withFdSocket serverSocket setCloseOnExecIfNeeded
   bind serverSocket $ addrAddress $ head addrInfo
   listen serverSocket 5
 
@@ -33,6 +41,6 @@ main = do
     (clientSocket, clientAddr) <- accept serverSocket
     BC.putStrLn $ "Accepted connection from " <> BC.pack (show clientAddr) <> "."
     msg <- recv clientSocket 4000
-    print $ B.length msg
-    sendAll clientSocket "HTTP/1.1 200 OK\r\n\r\n"
+    let resp = checkMsg msg
+    sendAll clientSocket (BC.pack resp)
     close clientSocket
