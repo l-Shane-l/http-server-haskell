@@ -17,7 +17,7 @@ checkMsg msg
   where
     requestLines = BC.lines msg
     requestLine = head requestLines
-    path = head $ drop 1 $ BC.words requestLine -- Extract the path part of the request line
+    path = BC.words requestLine !! 1
     pathComponents = BC.split '/' path
     content echoText =
       BC.concat
