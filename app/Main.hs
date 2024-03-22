@@ -23,7 +23,7 @@ checkMsg msg
       "HTTP/1.1 200 OK\r\n"
         ++ "Content-Type: text/plain\r\n"
         ++ "Content-Length: "
-        ++ show (length rand)
+        ++ show (BC.length $ BC.pack rand)
         ++ "\r\n\r\n"
         ++ rand
 
