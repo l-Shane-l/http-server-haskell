@@ -4,16 +4,22 @@ module Main (main) where
 
 import Control.Monad (forever)
 import qualified Data.ByteString.Char8 as BC
+import Data.List.Split
 import Network.Socket
 import Network.Socket.ByteString
 import System.IO (BufferMode (..), hSetBuffering, stdin, stdout)
 
 checkMsg :: BC.ByteString -> String
 checkMsg msg
-  | msgParse msg !! 1 == "/" = "HTTP/1.1 200 OK\r\n\r\n"
+  | path msg == "/" = "HTTP/1.1 200 OK\r\n\r\n"
+  | url (path msg) !! 1 == "echo" = content (url (path msg) !! 2)
   | otherwise = "HTTP/1.1 404 Not Found\r\n\r\n"
   where
-    msgParse msg' = words $ BC.unpack msg'
+    msgParse msg''' = words $ BC.unpack msg'''
+    firstLine parsedMsg = parsedMsg !! 1
+    path msg' = firstLine $ msgParse msg'
+    url = splitOn "/"
+    content rand = "HTTP/1.1 200\r\n" <> "Content-Type: text/plain\r\n" <> "Content-Length: " <> show (length rand) <> "\r\n\r\n" <> (show rand) <> "\r\n\r\n"
 
 main :: IO ()
 main = do
@@ -41,6 +47,7 @@ main = do
     (clientSocket, clientAddr) <- accept serverSocket
     BC.putStrLn $ "Accepted connection from " <> BC.pack (show clientAddr) <> "."
     msg <- recv clientSocket 4000
+    BC.putStrLn msg
     let resp = checkMsg msg
     sendAll clientSocket (BC.pack resp)
     close clientSocket
