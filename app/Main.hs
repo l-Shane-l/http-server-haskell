@@ -12,7 +12,7 @@ import System.IO (BufferMode (..), hSetBuffering, stdin, stdout)
 checkMsg :: BC.ByteString -> String
 checkMsg msg
   | path msg == "/" = "HTTP/1.1 200 OK\r\n\r\n"
-  | url (path msg) !! 1 == "echo" = content (url (path msg) !! 2)
+  | url (path msg) !! 1 == "echo" = content $ drop 1 $ path msg
   | otherwise = "HTTP/1.1 404 Not Found\r\n\r\n"
   where
     msgParse msg''' = words $ BC.unpack msg'''
