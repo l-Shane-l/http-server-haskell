@@ -4,30 +4,50 @@ module Main (main) where
 
 import Control.Monad (forever)
 import qualified Data.ByteString.Char8 as BC
-import Data.List.Split
+import Data.Char (toLower)
+import Data.Maybe (fromMaybe)
 import Network.Socket
 import Network.Socket.ByteString
 import System.IO (BufferMode (..), hSetBuffering, stdin, stdout)
 
 checkMsg :: BC.ByteString -> BC.ByteString
 checkMsg msg
-  | path == "/" = "HTTP/1.1 200 OK\r\n\r\n"
-  | "echo" `elem` pathComponents = content $ BC.intercalate "/" $ drop 2 pathComponents
+  | path == "/" = buildResponse "200 OK" "text/plain" ""
+  | path == "/user-agent" =
+      let userAgent = fromMaybe "User-Agent not found" $ lookup "user-agent" (parseHeaders msg)
+       in buildResponse "200 OK" "text/plain" userAgent
+  | url (path) !! 1 == "echo" = content $ BC.intercalate "/" $ drop 2 $ url path
   | otherwise = "HTTP/1.1 404 Not Found\r\n\r\n"
   where
     requestLines = BC.lines msg
     requestLine = head requestLines
-    path = BC.words requestLine !! 1
-    pathComponents = BC.split '/' path
-    content echoText =
+    path = head $ drop 1 $ BC.words requestLine -- Extract the path
+    url = BC.split '/' -- A function to split paths into components
+    -- Parses headers into a list of (key, value) tuples
+    parseHeaders request =
+      let headers = takeWhile (/= "") . drop 1 . dropWhile (/= "") $ requestLines
+       in map
+            ( \header ->
+                let (key, value) = BC.break (== ':') header
+                 in (BC.map toLower $ BC.strip key, BC.strip $ BC.drop 1 value)
+            )
+            headers
+    -- Builds a generic HTTP response given status, content type, and body
+    buildResponse status contentType body =
       BC.concat
-        [ "HTTP/1.1 200 OK\r\n",
-          "Content-Type: text/plain\r\n",
+        [ "HTTP/1.1 ",
+          status,
+          "\r\n",
+          "Content-Type: ",
+          contentType,
+          "\r\n",
           "Content-Length: ",
-          BC.pack . show $ BC.length echoText,
+          BC.pack . show $ BC.length body,
           "\r\n\r\n",
-          echoText
+          body
         ]
+    content echoText =
+      buildResponse "200 OK" "text/plain" echoText
 
 main :: IO ()
 main = do
