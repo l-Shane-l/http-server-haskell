@@ -9,23 +9,25 @@ import Network.Socket
 import Network.Socket.ByteString
 import System.IO (BufferMode (..), hSetBuffering, stdin, stdout)
 
-checkMsg :: BC.ByteString -> String
+checkMsg :: BC.ByteString -> BC.ByteString
 checkMsg msg
-  | path msg == "/" = "HTTP/1.1 200 OK\r\n\r\n"
-  | url (path msg) !! 1 == "echo" = content $ drop 2 $ path msg
+  | path == "/" = "HTTP/1.1 200 OK\r\n\r\n"
+  | "echo" `elem` pathComponents = content $ BC.intercalate "/" $ drop 2 pathComponents
   | otherwise = "HTTP/1.1 404 Not Found\r\n\r\n"
   where
-    msgParse msg''' = words $ BC.unpack msg'''
-    firstLine parsedMsg = parsedMsg !! 1
-    path msg' = firstLine $ msgParse msg'
-    url = splitOn "/"
-    content rand =
-      "HTTP/1.1 200 OK\r\n"
-        ++ "Content-Type: text/plain\r\n"
-        ++ "Content-Length: "
-        ++ show (BC.length $ BC.pack rand)
-        ++ "\r\n\r\n"
-        ++ rand
+    requestLines = BC.lines msg
+    requestLine = head requestLines
+    path = head $ drop 1 $ BC.words requestLine -- Extract the path part of the request line
+    pathComponents = BC.split '/' path
+    content echoText =
+      BC.concat
+        [ "HTTP/1.1 200 OK\r\n",
+          "Content-Type: text/plain\r\n",
+          "Content-Length: ",
+          BC.pack . show $ BC.length echoText,
+          "\r\n\r\n",
+          echoText
+        ]
 
 main :: IO ()
 main = do
@@ -55,7 +57,7 @@ main = do
     msg <- recv clientSocket 4000
     BC.putStrLn msg
     let resp = checkMsg msg
-    let finalResp = BC.pack resp
+    let finalResp = resp
     BC.putStrLn finalResp
-    sendAll clientSocket (BC.pack resp)
+    sendAll clientSocket resp
     close clientSocket
