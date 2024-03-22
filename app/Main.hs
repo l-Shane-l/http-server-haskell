@@ -18,16 +18,8 @@ checkMsg msg
     requestLine = head requestLines
     path = BC.words requestLine !! 1
     pathComponents = BC.split '/' path
-    pathStartsWithEcho = "echo" == (head $ drop 1 pathComponents) -- More explicit path checking
-    content echoText =
-      BC.concat
-        [ "HTTP/1.1 200 OK\r\n",
-          "Content-Type: text/plain\r\n",
-          "Content-Length: ",
-          BC.pack . show $ BC.length echoText,
-          "\r\n\r\n",
-          echoText
-        ]
+    pathStartsWithEcho = "echo" == pathComponents !! 1
+    content = buildResponse "200" "text/plain"
 
 buildResponse :: BC.ByteString -> BC.ByteString -> BC.ByteString -> BC.ByteString
 buildResponse status contentType body =
