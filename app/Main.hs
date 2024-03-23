@@ -54,14 +54,13 @@ parseFileName path =
     ["", "files", filename] -> Just filename
     _ -> Nothing
 
--- Attempts to read the file specified by the filename, if it exists in the directory.
 readFileIfExists :: BC.ByteString -> App (Either String BC.ByteString)
 readFileIfExists filename = do
   directory <- ask
   let filePath = directory ++ "/" ++ BC.unpack filename
-  liftIO $ putStrLn $ "Attempting to access file: " ++ filePath -- Log the file path
+  liftIO $ putStrLn $ "Attempting to access file: " ++ filePath
   fileExists <- liftIO $ doesFileExist filePath
-  liftIO $ putStrLn $ "File exists: " ++ show fileExists -- Log file existence check
+  liftIO $ putStrLn $ "File exists: " ++ show fileExists
   if fileExists
     then do
       fileContents <- liftIO $ BS.readFile filePath
