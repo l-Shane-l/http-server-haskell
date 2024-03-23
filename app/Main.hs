@@ -12,7 +12,7 @@ checkMsg :: BC.ByteString -> BC.ByteString
 checkMsg msg
   | path == "/" = buildResponse "200 OK" "" "Welcome!"
   | operation == "echo" = content $ BC.intercalate "/" $ drop 2 pathComponents
-  | operation == "user-agent" = content $ BC.split ' ' userAgent !! 1
+  | operation == "user-agent" = content userAgent
   | otherwise = buildResponse "404 Not Found" "" "Not Found"
   where
     requestLines = BC.lines msg
@@ -21,7 +21,7 @@ checkMsg msg
     pathComponents = BC.split '/' path
     operation = pathComponents !! 1
     content = buildResponse "200" "text/plain"
-    userAgent = requestLines !! 3
+    userAgent = BC.words (requestLines !! 3) !! 1
 
 buildResponse :: BC.ByteString -> BC.ByteString -> BC.ByteString -> BC.ByteString
 buildResponse status contentType body =
