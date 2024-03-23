@@ -14,7 +14,8 @@ checkMsg msg
   | path == "/" = buildResponse "200 OK" "" "Welcome!"
   | operation == "echo" = content $ BC.intercalate "/" $ drop 2 pathComponents
   | operation == "user-agent" = content userAgent
-  | otherwise = buildResponse "404 Not Found" "" "Not Found"
+  | operation == "files" = notFound
+  | otherwise = notFound
   where
     requestLines = BC.lines msg
     requestLine = head requestLines
@@ -23,6 +24,7 @@ checkMsg msg
     operation = pathComponents !! 1
     content = buildResponse "200" "text/plain"
     userAgent = BC.words (requestLines !! 2) !! 1
+    notFound = buildResponse "404 Not Found" "" "Not Found"
 
 buildResponse :: BC.ByteString -> BC.ByteString -> BC.ByteString -> BC.ByteString
 buildResponse status contentType body =
