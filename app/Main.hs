@@ -11,10 +11,10 @@ import System.IO (BufferMode (..), hSetBuffering, stdin, stdout)
 
 checkMsg :: BC.ByteString -> BC.ByteString
 checkMsg msg
-  | path == "/" = buildResponse "200 OK" "" "Welcome!"
+  | path == "/" = ok
   | operation == "echo" = content $ BC.intercalate "/" $ drop 2 pathComponents
   | operation == "user-agent" = content userAgent
-  | operation == "files" = notFound
+  | operation == "files" = ok
   | otherwise = notFound
   where
     requestLines = BC.lines msg
@@ -25,6 +25,7 @@ checkMsg msg
     content = buildResponse "200" "text/plain"
     userAgent = BC.words (requestLines !! 2) !! 1
     notFound = buildResponse "404 Not Found" "" "Not Found"
+    ok = buildResponse "200 OK" "" "Welcome!"
 
 buildResponse :: BC.ByteString -> BC.ByteString -> BC.ByteString -> BC.ByteString
 buildResponse status contentType body =
