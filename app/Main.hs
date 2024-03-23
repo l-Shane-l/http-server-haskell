@@ -96,7 +96,7 @@ main = do
   hSetBuffering stdout LineBuffering
   hSetBuffering stdin LineBuffering
   args <- getArgs
-  let directory = head args -- Simplification for demonstration; consider using a parsing library for robustness
+  let directory = args !! 1
 
   -- You can use print statements as follows for debugging, they'll be visible when running tests.
   BC.putStrLn "Logs from your program will appear here"
