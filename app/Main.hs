@@ -21,7 +21,7 @@ checkMsg msg
     pathComponents = BC.split '/' path
     operation = pathComponents !! 1
     content = buildResponse "200" "text/plain"
-    userAgent = BC.words (requestLines !! 3) !! 1
+    userAgent = BC.words (requestLines !! 2) !! 1
 
 buildResponse :: BC.ByteString -> BC.ByteString -> BC.ByteString -> BC.ByteString
 buildResponse status contentType body =
