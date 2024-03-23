@@ -14,8 +14,6 @@ import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 import System.IO (BufferMode (..), hSetBuffering, stdin, stdout)
 
--- Include other necessary imports here
-
 type Config = String -- Directory path
 
 type App = ReaderT Config IO
@@ -27,14 +25,20 @@ checkMsg msg = do
     | operation == "echo" -> return $ content $ BC.intercalate "/" $ drop 2 pathComponents
     | operation == "user-agent" -> return $ content userAgent
     | operation == "files" ->
-        case parseFileName path of
-          Just filename -> do
-            liftIO $ putStrLn $ "Extracted filename: " ++ BC.unpack filename -- Log the filename
+        case (method, parseFileName path) of
+          ("GET", Just filename) -> do
+            liftIO $ putStrLn $ "Serving filename: " ++ BC.unpack filename -- For debugging
             result <- readFileIfExists filename
             case result of
               Right contents -> return $ buildResponse "200 OK" "application/octet-stream" contents
               Left _ -> return notFound
-          Nothing -> return notFound
+          ("POST", Just filename) -> do
+            liftIO $ putStrLn $ "Saving filename: " ++ BC.unpack filename -- For debugging
+            result <- saveFile filename (last requestLines)
+            case result of
+              Right _ -> return $ buildResponse "201 Created" "" "Created"
+              Left errMsg -> return $ buildResponse "500 Internal Server Error" "" (BC.pack errMsg)
+          _ -> return notFound
     | otherwise -> return notFound
   where
     requestLines = BC.lines msg
@@ -46,6 +50,7 @@ checkMsg msg = do
     userAgent = BC.words (requestLines !! 2) !! 1
     notFound = buildResponse "404 Not Found" "" "Not Found"
     ok = buildResponse "200 OK" "" "Welcome!"
+    method = head $ BC.words requestLine
 
 -- Extracts the filename from the request path, if it matches the expected format.
 parseFileName :: BC.ByteString -> Maybe BC.ByteString
@@ -53,6 +58,14 @@ parseFileName path =
   case BC.split '/' path of
     ["", "files", filename] -> Just filename
     _ -> Nothing
+
+saveFile :: BC.ByteString -> BC.ByteString -> App (Either String ())
+saveFile filename body = do
+  directory <- ask
+  let filePath = directory ++ "/" ++ BC.unpack filename
+  liftIO $ do
+    BC.writeFile filePath body -- Write the file content
+    return $ Right ()
 
 readFileIfExists :: BC.ByteString -> App (Either String BC.ByteString)
 readFileIfExists filename = do
@@ -85,7 +98,7 @@ handleConnection clientSocket clientAddr = do
   liftIO $ BC.putStrLn $ "Accepted connection from " <> BC.pack (show clientAddr) <> "."
   msg <- liftIO $ recv clientSocket 4000
   liftIO $ BC.putStrLn msg
-  resp <- checkMsg msg -- Now correctly within the ReaderT monad
+  resp <- checkMsg msg
   liftIO $ BC.putStrLn "final resp \n"
   liftIO $ BC.putStrLn resp
   liftIO $ sendAll clientSocket resp
@@ -97,10 +110,6 @@ main = do
   hSetBuffering stdin LineBuffering
   args <- getArgs
   let directory = args !! 1
-
-  -- You can use print statements as follows for debugging, they'll be visible when running tests.
-  BC.putStrLn "Logs from your program will appear here"
-
   let host = "127.0.0.1"
       port = "4221"
 
