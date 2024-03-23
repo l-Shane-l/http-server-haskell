@@ -2,6 +2,7 @@
 
 module Main (main) where
 
+import Control.Concurrent (forkIO)
 import Control.Monad (forever)
 import qualified Data.ByteString.Char8 as BC
 import Network.Socket
@@ -60,12 +61,13 @@ main = do
   -- Accept connections and handle them forever
   forever $ do
     (clientSocket, clientAddr) <- accept serverSocket
-    BC.putStrLn $ "Accepted connection from " <> BC.pack (show clientAddr) <> "."
-    msg <- recv clientSocket 4000
-    BC.putStrLn msg
-    let resp = checkMsg msg
-    let finalResp = resp
-    putStrLn "final resp \n"
-    BC.putStrLn finalResp
-    sendAll clientSocket resp
-    close clientSocket
+    forkIO $ do
+      BC.putStrLn $ "Accepted connection from " <> BC.pack (show clientAddr) <> "."
+      msg <- recv clientSocket 4000
+      BC.putStrLn msg
+      let resp = checkMsg msg
+      let finalResp = resp
+      putStrLn "final resp \n"
+      BC.putStrLn finalResp
+      sendAll clientSocket resp
+      close clientSocket
