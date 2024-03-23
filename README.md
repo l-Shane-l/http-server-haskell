@@ -1,38 +1,15 @@
-[![progress-banner](https://backend.codecrafters.io/progress/http-server/1a452eea-89f4-44ab-84e7-eda2978b4953)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# Haskell Http Server
 
-This is a starting point for Haskell solutions to the
-["Build Your Own HTTP server" Challenge](https://app.codecrafters.io/courses/http-server/overview).
+This is a server built following the codecrafters challenge.
 
-[HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol) is the
-protocol that powers the web. In this challenge, you'll build a HTTP/1.1 server
-that is capable of serving multiple clients.
+I challenge myself to finish it in one sitting one evening, so its very rough around the edges I may
+revisit it in the future.
 
-Along the way you'll learn about TCP servers,
-[HTTP request syntax](https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html),
-and more.
+The code is written to match exactly the test cases and simply pass so there is little
+error handling. Its a very delicate setup.
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+I really enjoyed this challenge it was good to get back to using concurrency and Monads like Reader and Either.
 
-# Passing the first stage
+To run this use the bash script attached, the api calls can be inferred from the code.
 
-The entry point for your HTTP server implementation is in `app/Main.hs`. Study
-and uncomment the relevant code, and push your changes to pass the first stage:
-
-```sh
-git add .
-git commit -m "pass 1st stage" # any msg
-git push origin master
-```
-
-Time to move on to the next stage!
-
-# Stage 2 & beyond
-
-Note: This section is for stages 2 and beyond.
-
-1. Ensure you have `stack` installed locally
-1. Run `./your_server.sh` to run your program, which is implemented in
-   `app/Main.hs`.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
+I hope to revisit this later and built is out to be a more series project
