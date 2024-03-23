@@ -22,7 +22,6 @@ type App = ReaderT Config IO
 
 checkMsg :: BC.ByteString -> App BC.ByteString
 checkMsg msg = do
-  directoy <- ask
   if
     | path == "/" -> return ok
     | operation == "echo" -> return $ content $ BC.intercalate "/" $ drop 2 pathComponents
@@ -30,11 +29,12 @@ checkMsg msg = do
     | operation == "files" ->
         case parseFileName path of
           Just filename -> do
+            liftIO $ putStrLn $ "Extracted filename: " ++ BC.unpack filename -- Log the filename
             result <- readFileIfExists filename
             case result of
               Right contents -> return $ buildResponse "200 OK" "application/octet-stream" contents
-              Left errorMsg -> return $ notFound
-          Nothing -> return $ notFound
+              Left _ -> return notFound
+          Nothing -> return notFound
     | otherwise -> return notFound
   where
     requestLines = BC.lines msg
@@ -59,7 +59,9 @@ readFileIfExists :: BC.ByteString -> App (Either String BC.ByteString)
 readFileIfExists filename = do
   directory <- ask
   let filePath = directory ++ "/" ++ BC.unpack filename
+  liftIO $ putStrLn $ "Attempting to access file: " ++ filePath -- Log the file path
   fileExists <- liftIO $ doesFileExist filePath
+  liftIO $ putStrLn $ "File exists: " ++ show fileExists -- Log file existence check
   if fileExists
     then do
       fileContents <- liftIO $ BS.readFile filePath
